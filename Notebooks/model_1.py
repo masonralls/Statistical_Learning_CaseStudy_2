@@ -10,3 +10,12 @@ from statsmodels.graphics.tsaplots import plot_pacf
 import kagglehub
 import os
 import matplotlib.dates as mdates
+
+# Download latest version
+path = kagglehub.dataset_download("ddosad/dummy-truck-sales-for-time-series")
+
+print("Path to dataset files:", path)
+
+# Display the first few rows of data
+df = pd.read_csv(path + "/Truck_sales.csv")
+df.head()
