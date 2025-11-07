@@ -48,3 +48,43 @@ for train_idx, val_idx in tss.split(df):
     fold += 1
 plt.show()
 
+# create a derived variable using the date variable
+df['Year'] = df['Month-Year'].dt.year
+df['Month'] = df['Month-Year'].dt.month
+
+# Add more time-based features
+df['Quarter'] = df['Month-Year'].dt.quarter
+df['YearMonth'] = df['Year'].astype(str) + '-' + df['Month'].astype(str).str.zfill(2)
+df['MonthsSinceStart'] = (df['Year'] - df['Year'].min()) * 12 + df['Month']
+
+# Import required libraries for collinearity analysis
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.tools.tools import add_constant
+
+# Function to calculate VIF for each feature
+def calculate_vif(X):
+    vif_data = pd.DataFrame()
+    vif_data["Variable"] = X.columns
+    vif_data["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
+    return vif_data.sort_values('VIF', ascending=False)
+
+# Select numerical columns for correlation analysis
+numeric_cols = ['Year', 'Month', 'Quarter', 'MonthsSinceStart', 'Number_Trucks_Sold']
+correlation_matrix = df[numeric_cols].corr()
+
+# Plot correlation matrix
+plt.figure(figsize=(10, 8))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+plt.title('Correlation Matrix of Features')
+plt.show()
+
+# Calculate VIF
+X = df[['Year', 'Month', 'Quarter', 'MonthsSinceStart']]
+vif_df = calculate_vif(X)
+print("\nVariance Inflation Factors:")
+print(vif_df)
+
+# Based on VIF and correlation results, let's keep only the least collinear features
+# MonthsSinceStart is a good single feature that captures both Year and Month information
+selected_features = ['MonthsSinceStart', 'Quarter']
+print("\nSelected features after collinearity analysis:", selected_features)

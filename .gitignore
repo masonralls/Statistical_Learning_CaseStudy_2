@@ -1,21 +1,41 @@
+# Python virtual environment
 .venv/
+venv/
+ENV/
+
+# Python cache files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-build/
-develop-eggs/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# VS Code settings
+.vscode/
+
+# Distribution / packaging
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
+build/
 *.egg-info/
-.installed.cfg
-*.egg
+
+# Local development settings
+.env
+.idea/
+
+# Large data files
+*.csv
+*.tsv
+*.xls
+*.xlsx
+*.db
+*.sqlite
+*.h5
+
+# Logs
+*.log
+
+# System files
+.DS_Store
+Thumbs.db
