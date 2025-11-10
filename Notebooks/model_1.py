@@ -79,3 +79,70 @@ vif = pd.DataFrame()
 vif["features"] = X.columns
 vif["VIF"] = [variance_inflation_factor(X.values, i) for i in range(X.shape[1])]
 print(vif)
+
+# Plot the VIF values
+plt.figure(figsize=(10, 6))
+sns.barplot(x="VIF", y="features", data=vif, palette="viridis")
+plt.title("Variance Inflation Factor (VIF) for Features")
+plt.xlabel("VIF")
+plt.ylabel("Features")
+plt.show()
+# Based on VIF results, we can drop 'month' and 'year' due to high multicollinearity
+df.drop(columns=['year', 'month'], inplace=True)
+df.head()
+
+# Use PACF to determine which lags to include
+plot_pacf(df['Number_Trucks_Sold'], lags=12, method='yw')
+plt.show()
+
+# Create lag features based on PACF results
+df['lag_1'] = df['Number_Trucks_Sold'].shift(1)
+df['lag_7'] = df['Number_Trucks_Sold'].shift(7)
+
+df
+
+# print null values
+print(df.isnull().sum())
+
+# Drop rows with null values
+df.dropna(inplace=True)
+
+# Define features and target variable
+features = ['month_sin', 'month_cos', 'time_index', 'lag_1', 'lag_7']
+target = 'Number_Trucks_Sold'
+
+# Prepare data for modeling
+X = df[features]
+y = df[target]
+
+# Time Series Cross Validation with plots
+tss = TimeSeriesSplit(n_splits=5, test_size=12, gap=1)
+fold = 0
+for train_idx, val_idx in tss.split(df):
+    X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+    y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
+
+    # Train XGBoost model
+    model = xgb.XGBRegressor(objective='reg:squarederror', n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+
+    # Predict and evaluate
+    y_pred = model.predict(X_val)
+    rmse = np.sqrt(mean_squared_error(y_val, y_pred))
+    print(f'Fold {fold} RMSE: {rmse:.2f}')
+    fold += 1
+
+# Plot actual vs predicted for the last fold
+plt.figure(figsize=(15, 5))
+plt.plot(y_val.index, y_val, label='Actual', color='blue')
+plt.plot(y_val.index, y_pred, label='Predicted', color='red')
+plt.title(f'Fold {fold - 1} Actual vs Predicted')
+plt.xlabel('Date')
+plt.ylabel('Number of Trucks Sold')
+plt.legend()
+plt.show()
+
+# Feature importance plot
+xgb.plot_importance(model, importance_type='gain')
+plt.title('Feature Importance')
+plt.show()
