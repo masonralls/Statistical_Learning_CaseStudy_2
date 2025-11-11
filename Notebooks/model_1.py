@@ -23,6 +23,7 @@ df = pd.read_csv(path + "/Truck_sales.csv")
 
 # convert 'Month-Year' to datetime
 df['date'] = pd.to_datetime(df['Month-Year'], format='%y-%b')
+df = df.sort_values('date').set_index('date')
 
 # Replace month-year column with date column
 df.drop(columns=['Month-Year'], inplace=True)
@@ -32,7 +33,7 @@ print(df.dtypes)
 df.head()
 
 # initial plot of sales over time
-df.plot(x = 'date', y = 'Number_Trucks_Sold',
+df.plot(y = 'Number_Trucks_Sold',
         style='.',
         figsize=(15, 5),
         color=color_pal()[0],
@@ -59,12 +60,12 @@ for train_idx, val_idx in tss.split(df):
     fold += 1
 plt.show()
 
-# create derived variables using datetime features
-df['year'] = df['date'].dt.year
-df['month'] = df['date'].dt.month
+# Feature engineering: create derived variables using datetime features
+df['year'] = df.index.year
+df['month'] = df.index.month
 df['month_sin'] = np.sin(2 * np.pi * df['month'] / 12)
 df['month_cos'] = np.cos(2 * np.pi * df['month'] / 12)
-df['time_index'] = (df['date'] - df['date'].min()).dt.days
+df['time_index'] = (df.index - df.index.min()).days
 df.head()
 
 # Create a correlation heatmap of the features
@@ -87,8 +88,8 @@ plt.title("Variance Inflation Factor (VIF) for Features")
 plt.xlabel("VIF")
 plt.ylabel("Features")
 plt.show()
-# Based on VIF results, we can drop 'month' and 'year' due to high multicollinearity
-df.drop(columns=['year', 'month'], inplace=True)
+# Based on VIF results, we can drop 'month' due to high multicollinearity
+df.drop(columns=['month'], inplace=True)
 df.head()
 
 # Use PACF to determine which lags to include
@@ -97,7 +98,7 @@ plt.show()
 
 # Create lag features based on PACF results
 df['lag_1'] = df['Number_Trucks_Sold'].shift(1)
-df['lag_7'] = df['Number_Trucks_Sold'].shift(7)
+df['lag_12'] = df['Number_Trucks_Sold'].shift(12)
 
 df
 
@@ -108,7 +109,7 @@ print(df.isnull().sum())
 df.dropna(inplace=True)
 
 # Define features and target variable
-features = ['month_sin', 'month_cos', 'time_index', 'lag_1', 'lag_7']
+features = ['month_sin', 'month_cos', 'time_index', 'lag_1', 'lag_12']
 target = 'Number_Trucks_Sold'
 
 # Prepare data for modeling
@@ -131,6 +132,9 @@ for train_idx, val_idx in tss.split(df):
     rmse = np.sqrt(mean_squared_error(y_val, y_pred))
     print(f'Fold {fold} RMSE: {rmse:.2f}')
     fold += 1
+    
+# print average RMSE across folds
+print(f'Average RMSE across folds: {rmse:.2f}')
 
 # Plot actual vs predicted for the last fold
 plt.figure(figsize=(15, 5))
